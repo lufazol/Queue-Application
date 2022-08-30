@@ -1,13 +1,12 @@
 from collections import deque
 
-
 class OperatorsQueue:
     
     def __init__(self, queue):
         self.queue = queue
 
-    def addOperator(self, operator):
-        self.queue.appendleft(operator)
+    def receivesOperator(self, operator):
+        self.queue.append(operator)
 
     def hasAvailableOperator(self):
         for operator in self.queue:
@@ -18,10 +17,16 @@ class OperatorsQueue:
         for operator in self.queue:
             if operator.state == "available":
                 operator.receivesCall(callId)
+                break
     
-    def getOperatorWithRingingCall(self, callId):
+    def getOperator(self, id):
         for operator in self.queue:
-            if operator.state == "ringing" and operator.currentCallId == callId:
+            if operator.id == id:
+                return operator
+    
+    def getOperatorWithCall(self, callId):
+        for operator in self.queue:
+            if operator.currentCallId == callId:
                 return operator
 
     
@@ -34,23 +39,30 @@ class Operator:
         self.currentCallId = currentCallId
 
     def receivesCall(self, callId):
-        self.state = 'ringing'
+        self.state = "ringing"
         self.currentCallId = callId
         print(f"Call {callId} ringing for operator {self.id}")
     
     def answersCall(self):
-        self.state = 'busy'
+        self.state = "busy"
         print(f"Call {self.currentCallId} answered by operator {self.id}")
 
     def finishesCall(self):
-        self.state = 'available'
+        self.state = "available"
         print(f"Call {self.currentCallId} finished and operator {self.id} available" )
-        self.currentCallId = '0'
+        self.currentCallId = "0"
 
     def rejectsCall(self):
-        self.state = 'available'
+        self.state = "available"
         print(f"Call {self.currentCallId} rejected by operator {self.id}")
-        self.currentCallId = '0'
+        rejectedCallId = self.currentCallId
+        self.currentCallId = "0"
+        return rejectedCallId
+    
+    def missesCall(self):
+        self.state = "available"
+        print(f"Call {self.currentCallId} missed")
+        self.currentCallId = "0"
 
 
 
@@ -59,21 +71,36 @@ class CallsQueue:
     def __init__(self, queue):
         self.queue = queue
 
-    '''
-    def putInCallsQueue(self, callId):
-        self.queue.appendleft(callId)
-        print(f"Call {callId} waiting in queue")
-    '''
-    
-    def hasCallInQueue(self):
+    def hasCall(self):
         return self.queue
     
-    def isHungUp(self):
-        pass
+    def getsNewCall(self, callId):
+        self.queue.append(callId)
+        print(f"Call {callId} waiting in queue")
 
-def putCallInCallsQueue(callId, callsQueue):
-    callsQueue.appendleft(callId)
-    print(f"Call {callId} waiting in queue")
+    def hasCallResolved(self, operator):
+        if self.hasCall():
+            callId = self.queue[0]
+            operator.receivesCall(callId)
+            self.hasCallRemoved()        
+
+    def hasCallRemoved(self):
+        self.queue.popleft()
+    
+    def missesCall(self, callId):
+        for call in self.queue:
+            if call == callId:
+                print(f"Call {callId} missed")
+                self.queue.remove(call)
+
+
+
+def operatorHasCallId(operatorsQueue, callId):
+    for operator in operatorsQueue.queue:
+        if operator.currentCallId == callId:
+            return True
+    return False
+
 
 
 def main():
@@ -82,19 +109,41 @@ def main():
     operatorsQueue = OperatorsQueue(deque())
     operatorA = Operator("A", "available", "0")
     operatorB = Operator("B", "available", "0")
+    operatorsQueue.receivesOperator(operatorA)
+    operatorsQueue.receivesOperator(operatorB)
 
+    while True:
+        receivedCommand, id = input().split()
 
+        if receivedCommand == "call":
+            print(f"Call {id} received")
+            if operatorsQueue.hasAvailableOperator():
+                #actually make into stand-alone function
+                operatorsQueue.setCallToAvailableOperator(id)
+            else:
+                callsQueue.getsNewCall(id)
 
-    receivedCommand, callId = input().split()
+        elif receivedCommand == "answer":
+            operator = operatorsQueue.getOperator(id)
+            operator.answersCall()
+        
+        elif receivedCommand == "reject":
+            operator = operatorsQueue.getOperator(id)
+            rejectedCallId = operator.rejectsCall()
+            callsQueue.getsNewCall(rejectedCallId)
+            callsQueue.hasCallResolved(operator)
 
-    if receivedCommand == "call":
-        print(f"Call {callId} received")
-        if operatorsQueue.hasAvailableOperator():
-            #actually make into stand-alone function
-            operatorsQueue.setCallToAvailableOperator(callId)
-        else:
-            putCallInCallsQueue(callId, callsQueue)
-    elif receivedCommand == "answer":
-        operator = operatorsQueue.getOperatorWithRingingCall(callId)
-        operator.answersCall()
-    
+        elif receivedCommand == "hangup":
+            if operatorHasCallId(operatorsQueue, id):
+                operator = operatorsQueue.getOperatorWithCall(id)
+                if operator.state == "busy":
+                    operator.finishesCall()
+                    callsQueue.hasCallResolved(operator)
+                elif operator.state == "ringing":
+                    operator.missesCall()
+                    callsQueue.hasCallResolved(operator)
+            else:
+                callsQueue.missesCall(id)
+
+main()
+
