@@ -92,8 +92,10 @@ class CallsQueue:
             if call == callId:
                 print(f"Call {callId} missed")
                 self.queue.remove(call)
+                break
 
-
+    def getsRejectedCall(self, callId):
+        self.queue.append(callId)
 
 def operatorHasCallId(operatorsQueue, callId):
     for operator in operatorsQueue.queue:
@@ -130,7 +132,7 @@ def main():
         elif receivedCommand == "reject":
             operator = operatorsQueue.getOperator(id)
             rejectedCallId = operator.rejectsCall()
-            callsQueue.getsNewCall(rejectedCallId)
+            callsQueue.getsRejectedCall(rejectedCallId)
             callsQueue.hasCallResolved(operator)
 
         elif receivedCommand == "hangup":
