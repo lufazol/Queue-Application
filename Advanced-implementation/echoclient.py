@@ -7,15 +7,23 @@ class EchoClient(protocol.Protocol):
         dictWithCommandAndId = {"command": "empty","id": "empty"}
         dictWithCommandAndId["command"] = firstCommand
         dictWithCommandAndId["id"] = id
-        jsonCommand = json.loads(dictWithCommandAndId)
-        self.transport.write(jsonCommand)
+        jsonCommand = json.dumps(dictWithCommandAndId)
+        self.transport.write(jsonCommand.encode('utf-8'))
 
     def dataReceived(self, data):
         #data = data.decode("utf-8")
         #print("Server said:", data)
-        messageReceived = json.dumps(data)
-        print(messageReceived)
-        self.transport.write(input().encode('utf-8'))
+        data = data.decode('utf-8')
+        messageReceived = json.loads(data)
+        for message in messageReceived["message"]:
+            print(message)
+        firstCommand, id = input().split()
+        dictWithCommandAndId = {"command": "empty","id": "empty"}
+        dictWithCommandAndId["command"] = firstCommand
+        dictWithCommandAndId["id"] = id       
+        jsonCommand = json.dumps(dictWithCommandAndId)
+        self.transport.write(jsonCommand.encode('utf-8'))
+        #self.transport.write(input().encode('utf-8'))
         #self.transport.loseConnection()
 
 class EchoFactory(protocol.ClientFactory):
