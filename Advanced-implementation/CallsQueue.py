@@ -12,10 +12,9 @@ class CallsQueue:
         return f"Call {callId} waiting in queue"
 
     def hasCallResolved(self, operator):
-        if self.hasCall():
-            callId = self.queue[0]
-            self.hasCallRemoved()  
-            return operator.receivesCall(callId)
+        callId = self.queue[0]
+        self.hasCallRemoved()  
+        return operator.receivesCall(callId)
 
     def hasCallRemoved(self):
         self.queue.popleft()

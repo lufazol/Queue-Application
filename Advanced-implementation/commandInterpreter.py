@@ -1,7 +1,7 @@
 from twisted.internet import reactor, protocol
 import json
 
-class EchoClient(protocol.Protocol):
+class Client(protocol.Protocol):
     def connectionMade(self):
         firstCommand, id = input().split()
         dictWithCommandAndId = {"command": "empty","id": "empty"}
@@ -11,11 +11,9 @@ class EchoClient(protocol.Protocol):
         self.transport.write(jsonCommand.encode('utf-8'))
 
     def dataReceived(self, data):
-        #data = data.decode("utf-8")
-        #print("Server said:", data)
         data = data.decode('utf-8')
         messageReceived = json.loads(data)
-        for message in messageReceived["message"]:
+        for message in messageReceived["response"]:
             print(message)
         firstCommand, id = input().split()
         dictWithCommandAndId = {"command": "empty","id": "empty"}
@@ -23,12 +21,10 @@ class EchoClient(protocol.Protocol):
         dictWithCommandAndId["id"] = id       
         jsonCommand = json.dumps(dictWithCommandAndId)
         self.transport.write(jsonCommand.encode('utf-8'))
-        #self.transport.write(input().encode('utf-8'))
-        #self.transport.loseConnection()
 
-class EchoFactory(protocol.ClientFactory):
+class ClientFactory(protocol.ClientFactory):
     def buildProtocol(self, addr):
-        return EchoClient()
+        return Client()
 
     def clientConnectionFailed(self, connector, reason):
         print("Connection failed.")
@@ -38,5 +34,5 @@ class EchoFactory(protocol.ClientFactory):
         print("Connection lost.")
         reactor.stop()
 
-reactor.connectTCP("localhost", 5678, EchoFactory())
+reactor.connectTCP("localhost", 5678, ClientFactory())
 reactor.run()        
